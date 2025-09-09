@@ -1,12 +1,11 @@
 # Import libraries
-from datetime import datetime
+from datetime import timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 import requests
 import tarfile
 import csv
-import shutil
 import pandas as pd
 
 # Define the path for the input and output file
@@ -66,23 +65,6 @@ def consolidate_data():
     fixed_width_file = f"{destination_path}/fixed_width_data.csv"
     output_file = f"{destination_path}/extracted_data.csv"
 
-    # with open(csv_file, 'r') as csv_in, \
-    #      open(tsv_file, 'r') as tsv_in, \
-    #      open(fixed_width_file, 'r') as fixed_in, \
-    #      open(output_file, 'w') as out_file:
-    #     csv_reader = csv.reader(csv_in)
-    #     tsv_reader = csv.reader(tsv_in)
-    #     fixed_reader = csv.reader(fixed_in)
-    #     writer = csv.writer(out_file)
-
-    #     writer.writerow(['Rowid', 'Timestamp', 'Anonymized Vehicle number', 'Vehicle type', 'Number of axles', 'Tollplaza id', 'Type of Payment code', 'Vehicle Code'])
-    #     next(csv_reader)
-    #     next(tsv_reader)
-    #     next(fixed_reader)
-
-    #     for csv_row, tsv_row, fixed_row in zip(csv_reader, tsv_reader, fixed_reader):
-    #         writer.writerow(csv_row + tsv_row + fixed_row)
-
     df_csv = pd.read_csv(csv_file)
     df_tsv = pd.read_csv(tsv_file, sep='\t')
     df_fixed = pd.read_csv(fixed_width_file)
@@ -94,23 +76,14 @@ def transform_data():
     input_file = f"{destination_path}/extracted_data.csv"
     output_file = f"{destination_path}/transformed_data.csv"
 
-    # with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
-    #     reader = csv.DictReader(infile)
-    #     writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
-    #     writer.writeheader()
-
-    #     for row in reader:
-    #         row['Vehicle type'] = row['Vehicle type'].upper()
-    #         writer.writerow(row)
-
     df = pd.read_csv(input_file)
     df["Vehicle type"] = df["Vehicle type"].str.upper()
 
     df.to_csv(output_file, index=False)
 
 # Default arguments for DAG
-default_args = (
-    'owner': 'Chloe'
+default_args = {
+    'owner': 'Chloe',
     'depends_on_past': False,
     'email': ['chloe@email.com'],
     'email_on_failure': True,
@@ -118,7 +91,7 @@ default_args = (
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
     'start_date': days_ago(0),
-)
+}
 
 # Define the DAG
 dag = DAG(
