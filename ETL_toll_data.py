@@ -107,3 +107,69 @@ def transform_data():
     df["Vehicle type"] = df["Vehicle type"].str.upper()
 
     df.to_csv(output_file, index=False)
+
+# Default arguments for DAG
+default_args = (
+    'owner': 'Chloe'
+    'depends_on_past': False,
+    'email': ['chloe@email.com'],
+    'email_on_failure': True,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+    'start_date': days_ago(0),
+)
+
+# Define the DAG
+dag = DAG(
+    'ETL-toll-data',
+    default_args=default_args,
+    description='ETL pipeline using Apache Airflow',
+    schedule_interval='@daily',
+)
+
+# Define the tasks
+download_task = PythonOperator(
+    task_id='download_dataset',
+    python_callable=download_dataset,
+    dag=dag,
+)
+
+untar_task = PythonOperator(
+    task_id='untar_dataset',
+    python_callable=untar_dataset,
+    dag=dag,
+)
+
+extract_csv_task = PythonOperator(
+    task_id='extract_date_from_csv',
+    python_callable=extract_data_from_csv,
+    dag=dag,
+)
+
+extract_tsv_task = PythonOperator(
+    task_id='extract_data_from_tsv',
+    python_callable=extract_data_from_tsv,
+    dag=dag,
+)
+
+extract_fixed_width_task = PythonOperator(
+    task_id='extract_data_from_fixed_width',
+    python_callable=extract_data_from_fixed_width,
+    dag=dag,
+)
+
+consolidate_task = PythonOperator(
+    task_id='consolidate_data',
+    python_callable=consolidate_data,
+    dag=dag,
+)
+
+transform_task = PythonOperator(
+    task_id = 'transform_data',
+    python_callable=transform_data,
+    dag=dag,
+)
+
+# Set the tasks flow
+download_task >> untar_task >> [extract_csv_task, extract_tsv_task, extract_fixed_width_task] >> consolidate_task >> transform_task
